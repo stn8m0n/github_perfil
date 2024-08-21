@@ -1,51 +1,66 @@
-// import { url } from "inspector";
 import { useEffect, useState } from "react";
 import styles from './ReposList.module.css';
 
 const ReposList = ({ nomeUsuario }) => {
-    const[repos, setRepos] = useState([]);//criar o estado qeu ira armazenar a lista de repositórios [] para fazer desestruturação do useState () é uma função e como argumento a gente passa um array vazio 
+    const [repos, setRepos] = useState([]);
     const [estaCarregando, setEstaCarregando] = useState(true);
+    const [deuErro, setDeuErro] = useState(false); // Adiciona estado para erro
 
     useEffect(() => {
         setEstaCarregando(true);
+        setDeuErro(false); // Reseta o erro ao iniciar a nova busca
         fetch(`https://api.github.com/users/${nomeUsuario}/repos`)
-        .then(res => res.json())
-        .then(resJson => {
-            // setRepos(resJson);
-                setTimeout(() =>{
+            .then(res => {
+                if (!res.ok) { // Verifica se a resposta não é OK (status diferente de 200)
+                    throw new Error('Usuário não encontrado');
+                }
+                return res.json();
+            })
+            .then(resJson => {
+                setTimeout(() => {
                     setEstaCarregando(false);
                     setRepos(resJson);
                 }, 2000);
-            // console.log (resJson)
-            // console.log(resJson)
-        })
-    }, [nomeUsuario]); //uma função () que recebe um arrow function, vai ser chamado quando o componente for montado
+            })
+            .catch(err => {
+                setEstaCarregando(false);
+                setDeuErro(true); // Seta o erro para true em caso de erro
+                console.error(err);
+            });
+    }, [nomeUsuario]);
 
     return (
         <div className="container">
-            { estaCarregando ? ( //
-                <h1>carregando ...</h1>
+            {estaCarregando ? (
+                <h1>Carregando...</h1>
+            ) : deuErro ? ( // Condicional para mostrar a mensagem de erro
+                <h1>Erro: Usuário não encontrado</h1>
             ) : (
                 <ul className={styles.list}>
-                    {/* {repos.map(repositorio => ( */}
                     {repos.map(({ id, name, language, html_url }) => (
                         <li className={styles.listItem} key={id}>
-                            <div className={styles.listName} >
+                            <div className={styles.listName}>
                                 <b>Nome: </b>
                                 {name}
                             </div>
-                            <div className={styles.listLanguage} >
+                            <div className={styles.listLanguage}>
                                 <b>Linguagem: </b>
                                 {language}
-                            </div >
-                            <a className={styles.listLink} target="_blank" href={html_url}>Visitar no GitHub</a> {/*Quando pega um atributo do HTML e quer preencher ele com conteudo dinamico, tem que utilizar as chaves por conta do jsx */}
+                            </div>
+                            <a
+                                className={styles.listLink}
+                                target="_blank"
+                                href={html_url}
+                                rel="noopener noreferrer"
+                            >
+                                Visitar no GitHub
+                            </a>
                         </li>
                     ))}
-                    {/* <li>Repositório</li> */}
                 </ul>
             )}
         </div>
-    )
+    );
 }
 
 export default ReposList;
